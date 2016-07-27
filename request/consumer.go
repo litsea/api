@@ -19,7 +19,7 @@ type Consumer struct {
 	nonceGenerator nonceGenerator
 	signer         signature.Signer
 
-	AdditionalParams  map[string]string
+	AdditionalParams map[string]string
 }
 
 func newConsumer(consumerKey string, httpClient *http.Client) *Consumer {
@@ -60,7 +60,7 @@ func NewCustomConsumer(consumerKey string, consumerSecret string,
 	hashFunc crypto.Hash, httpClient *http.Client) *Consumer {
 	consumer := newConsumer(consumerKey, httpClient)
 
-	consumer.signer = signature.NewHMACSigner(consumerSecret)
+	consumer.signer = signature.NewSigner(consumerSecret, hashFunc)
 
 	return consumer
 }

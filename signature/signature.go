@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/hmac"
 	"encoding/base64"
+	"errors"
 	"fmt"
 
 	"github.com/litsea/api/parameter"
@@ -75,7 +76,7 @@ func (s *HMACSigner) Verify(message string, signature string) error {
 	}
 
 	if validSignature != signature {
-		return fmt.Errorf("signature did not match")
+		return errors.New("signature did not match")
 	}
 
 	return nil

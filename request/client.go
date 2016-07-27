@@ -7,8 +7,8 @@ import (
 )
 
 type client struct {
-	httpClient *http.Client
-	additionalParams  map[string]string
+	httpClient       *http.Client
+	additionalParams map[string]string
 }
 
 func NewClient(c *Consumer) (*client, error) {
@@ -23,15 +23,15 @@ func NewClient(c *Consumer) (*client, error) {
 }
 
 type request struct {
-	client *client
+	client     *client
 	url        string
 	userParams map[string]string
 }
 
-func (c *client) NewRequest(urlStr string) (*request) {
+func (c *client) NewRequest(urlStr string) *request {
 	return &request{
 		client: c,
-		url: urlStr,
+		url:    urlStr,
 	}
 }
 
@@ -87,8 +87,8 @@ func (r *request) Get(userParams map[string]string) (string, error) {
 
 func (r *request) Post(userParams map[string]string) (string, error) {
 	vals := url.Values{}
-		for k, v := range userParams {
-			vals.Add(k, v)
+	for k, v := range userParams {
+		vals.Add(k, v)
 	}
 
 	response, err := r.client.httpClient.PostForm(r.url, vals)

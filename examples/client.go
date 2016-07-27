@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/litsea/api/request"
 	"github.com/litsea/api/parameter"
+	"github.com/litsea/api/request"
 )
 
 func main() {

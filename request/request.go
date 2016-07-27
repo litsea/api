@@ -1,18 +1,18 @@
 package request
 
-import ()
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
-	"bytes"
 	"github.com/litsea/api/parameter"
-	"strconv"
 )
 
 const (
@@ -165,7 +165,7 @@ func parseBody(request *http.Request) (map[string]string, error) {
 		// Most of the time we get parameters from the query string:
 		for k, vs := range request.URL.Query() {
 			if len(vs) != 1 {
-				return nil, fmt.Errorf("Must have exactly one value per param")
+				return nil, errors.New("Must have exactly one value per param")
 			}
 
 			userParams[k] = vs[0]
@@ -189,7 +189,7 @@ func parseBody(request *http.Request) (map[string]string, error) {
 
 		for k, vs := range params {
 			if len(vs) != 1 {
-				return nil, fmt.Errorf("Must have exactly one value per param")
+				return nil, errors.New("Must have exactly one value per param")
 			}
 
 			userParams[k] = vs[0]

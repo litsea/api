@@ -28,7 +28,7 @@ func main() {
 	r := c.NewRequest(url)
 	response, _ := r.Get(params)
 
-	fmt.Println("response: " + string(response))
+	fmt.Println("response: " + response)
 
 	// post
 	url = "http://api.com/role/create"
@@ -38,5 +38,5 @@ func main() {
 	r = c.NewRequest(url)
 	response, _ = r.Post(params)
 
-	fmt.Println("response: " + string(response))
+	fmt.Println("response: " + response)
 }

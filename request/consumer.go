@@ -7,14 +7,10 @@ import (
 	"github.com/litsea/api/signature"
 )
 
-type HttpClient interface {
-	Do(req *http.Request) (resp *http.Response, err error)
-}
-
 type Consumer struct {
 	consumerKey    string
 	debug          bool
-	HttpClient     HttpClient
+	HttpClient     *http.Client
 	clock          clock
 	nonceGenerator nonceGenerator
 	signer         signature.Signer
@@ -22,11 +18,9 @@ type Consumer struct {
 	AdditionalParams map[string]string
 }
 
-func newConsumer(consumerKey string, httpClient *http.Client) *Consumer {
+func newConsumer(consumerKey string) *Consumer {
 	clock := &defaultClock{}
-	if httpClient == nil {
-		httpClient = &http.Client{}
-	}
+	httpClient := &http.Client{}
 	return &Consumer{
 		consumerKey:    consumerKey,
 		clock:          clock,
@@ -41,24 +35,14 @@ func (c *Consumer) Debug(enabled bool) {
 }
 
 func NewConsumer(consumerKey string, consumerSecret string) *Consumer {
-	consumer := newConsumer(consumerKey, nil)
+	consumer := newConsumer(consumerKey)
 	consumer.signer = signature.NewHMACSigner(consumerSecret)
 
 	return consumer
 }
 
-func NewCustomHttpClientConsumer(consumerKey string, consumerSecret string,
-	httpClient *http.Client) *Consumer {
-	consumer := newConsumer(consumerKey, httpClient)
-
-	consumer.signer = signature.NewHMACSigner(consumerSecret)
-
-	return consumer
-}
-
-func NewCustomConsumer(consumerKey string, consumerSecret string,
-	hashFunc crypto.Hash, httpClient *http.Client) *Consumer {
-	consumer := newConsumer(consumerKey, httpClient)
+func NewCustomConsumer(consumerKey string, consumerSecret string, hashFunc crypto.Hash) *Consumer {
+	consumer := newConsumer(consumerKey)
 
 	consumer.signer = signature.NewSigner(consumerSecret, hashFunc)
 

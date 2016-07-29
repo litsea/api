@@ -1,14 +1,36 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"os"
 
 	"github.com/litsea/api/parameter"
 	"github.com/litsea/api/request"
 )
 
 func main() {
-	consumer := request.NewConsumer("xx", "oo")
+	var consumerKey *string = flag.String(
+		"consumerkey",
+		"",
+		"Consumer Key")
+	var consumerSecret *string = flag.String(
+		"consumersecret",
+		"",
+		"Consumer Secret")
+	var domain *string = flag.String(
+		"domain",
+		"",
+		"API domain")
+
+	flag.Parse()
+
+	if len(*consumerKey) == 0 || len(*consumerSecret) == 0 || len(*domain) == 0 {
+		fmt.Println("You must set the --consumerkey, --consumersecret and --domain flags.")
+		os.Exit(1)
+	}
+
+	consumer := request.NewConsumer(*consumerKey, *consumerSecret)
 	consumer.Debug(true)
 	addon_params := make(map[string]string)
 	addon_params["_user"] = "lostsnow"
@@ -20,7 +42,7 @@ func main() {
 	c, _ := request.NewClient(consumer)
 
 	// get
-	url := "http://api.com/role/list"
+	url := "http://" + *domain + "/role/list"
 	params := make(map[string]string)
 	params["page_size"] = "10"
 	params["page"] = "1"
@@ -31,7 +53,7 @@ func main() {
 	fmt.Println("response: " + response)
 
 	// post
-	url = "http://api.com/role/create"
+	url = "http://" + *domain + "/role/create"
 	params = make(map[string]string)
 	params["role"] = parameter.Escape("测试 1")
 

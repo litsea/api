@@ -7,6 +7,7 @@ import (
 
 	"github.com/litsea/api/parameter"
 	"github.com/litsea/api/request"
+	"io/ioutil"
 )
 
 func main() {
@@ -22,11 +23,15 @@ func main() {
 		"domain",
 		"",
 		"API domain")
+	var filename *string = flag.String(
+		"filename",
+		"",
+		"File path")
 
 	flag.Parse()
 
-	if len(*consumerKey) == 0 || len(*consumerSecret) == 0 || len(*domain) == 0 {
-		fmt.Println("You must set the --consumerkey, --consumersecret and --domain flags.")
+	if len(*consumerKey) == 0 || len(*consumerSecret) == 0 || len(*domain) == 0 || len(*filename) == 0 {
+		fmt.Println("You must set the --consumerkey, --consumersecret, --domain and --filename flags.")
 		os.Exit(1)
 	}
 
@@ -41,22 +46,17 @@ func main() {
 	consumer.AdditionalParams = addon_params
 	c, _ := request.NewClient(consumer)
 
-	// get
-	url := "http://" + *domain + "/role/list?xx=oo"
+	// post file
+	fileBuf, _ := ioutil.ReadFile(*filename)
+
+	url := "http://" + *domain + "/file/upload?xxx="
 	params := make(map[string]string)
-	params["page_size"] = "10"
-	params["page"] = "1"
+	params["__file_filename"] = "test.png"
+	params["__file_formname"] = "files"
+	params["__file_data"] = string(fileBuf)
+	params["aa"] = "222"
 
 	r := c.NewRequest(url)
-	response, _ := r.Get(params)
-	fmt.Println("response: " + response)
-
-	// post
-	url = "http://" + *domain + "/role/create"
-	params = make(map[string]string)
-	params["role"] = parameter.Escape("测试 1")
-
-	r = c.NewRequest(url)
-	response, _ = r.Post(params)
+	response, _ := r.Post(params)
 	fmt.Println("response: " + response)
 }

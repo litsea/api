@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -110,14 +111,34 @@ func (rt *RoundTripper) RoundTrip(userRequest *http.Request) (*http.Response, er
 	}
 	paramPairs := parameter.ParamsToSortedPairs(userParams)
 
+	fileParams := make(map[string]string)
 	for i := range paramPairs {
-		allParams.AddUnescaped(paramPairs[i].Key, paramPairs[i].Value)
+		if paramPairs[i].Key == "__file_filename" {
+			fileParams["filename"] = paramPairs[i].Value
+			delete(userParams, "__file_filename")
+		} else if paramPairs[i].Key == "__file_formname" {
+			fileParams["formname"] = paramPairs[i].Value
+			delete(userParams, "__file_formname")
+		} else if paramPairs[i].Key == "__file_data" {
+			fileParams["data"] = paramPairs[i].Value
+			delete(userParams, "__file_data")
+		} else {
+			allParams.AddUnescaped(paramPairs[i].Key, paramPairs[i].Value)
+		}
 	}
 
 	signingURL := cloneURL(serverRequest.URL)
 	if host := serverRequest.Host; host != "" {
 		signingURL.Host = host
 	}
+
+	q := serverRequest.URL.Query()
+	if serverRequest.Body != nil {
+		for k, vs := range q {
+			allParams.AddUnescaped(k, vs[0])
+		}
+	}
+
 	baseString := rt.consumer.requestBaseString(serverRequest.Method, normalizeUrl(signingURL), allParams)
 
 	signature, err := rt.consumer.signer.Sign(baseString)
@@ -127,7 +148,6 @@ func (rt *RoundTripper) RoundTrip(userRequest *http.Request) (*http.Response, er
 
 	authParams.AddUnescaped(AUTH_PARAM_SIGNATURE, signature)
 
-	q := serverRequest.URL.Query()
 	for _, key := range authParams.Keys() {
 		for _, value := range authParams.Get(key) {
 			q.Add(key, value)
@@ -135,17 +155,33 @@ func (rt *RoundTripper) RoundTrip(userRequest *http.Request) (*http.Response, er
 	}
 	serverRequest.URL.RawQuery = q.Encode()
 
+	if fileParams["filename"] != "" && fileParams["formname"] != "" && fileParams["data"] != "" {
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile(fileParams["formname"], fileParams["filename"])
+		if err != nil {
+			return nil, err
+		}
+		part.Write([]byte(fileParams["data"]))
+
+		for key, val := range userParams {
+			_ = writer.WriteField(key, val)
+		}
+		err = writer.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		serverRequest.Body = ioutil.NopCloser(body)
+		serverRequest.ContentLength = int64(body.Len())
+		serverRequest.Header.Set("Content-Type", writer.FormDataContentType())
+	}
+
 	if rt.consumer.debug {
-		fmt.Printf("Request: %v\n", serverRequest)
+		fmt.Printf("Request: %+v\n", serverRequest)
 	}
 
-	resp, err := rt.consumer.HttpClient.Do(serverRequest)
-
-	if err != nil {
-		return resp, err
-	}
-
-	return resp, nil
+	return rt.consumer.HttpClient.Do(serverRequest)
 }
 
 func normalizeUrl(u *url.URL) string {
@@ -164,10 +200,6 @@ func parseBody(request *http.Request) (map[string]string, error) {
 	if request.Header.Get("Content-Type") != "application/x-www-form-urlencoded" {
 		// Most of the time we get parameters from the query string:
 		for k, vs := range request.URL.Query() {
-			if len(vs) != 1 {
-				return nil, errors.New("Must have exactly one value per param")
-			}
-
 			userParams[k] = vs[0]
 		}
 	} else {
